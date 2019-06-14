@@ -38,6 +38,7 @@ public class DatosRouter
         puertos.add(p);
     }
     
+    
     public ArrayList<Integer> getVecinos()
     {
         return vecinos;
@@ -46,6 +47,57 @@ public class DatosRouter
     public void setNodo(String d, String m, String p, int s, int a)
     {
         tabla.add(new nodo(d,m,p,s,a));
+    }
+    
+    public String getDireccion (int i) 
+    {  
+        return this.tabla.get(i).direccion;
+    }
+    
+    public String getMascara (int i) 
+    {
+        return this.tabla.get(i).mascara;
+    }   
+    
+    public String getPuerto (int i) 
+    {
+        return this.tabla.get(i).puerto;
+    }  
+    
+    public void setPuerto (int i, String s) 
+    {
+        nodo temp = tabla.get(i);
+        temp.puerto = s;
+        tabla.set(i, temp);
+    }
+    
+    public int getSaltos (int i) 
+    {
+        return this.tabla.get(i).saltos;
+    }  
+    
+    public void setSalto (int i, int s) 
+    {
+        nodo temp = tabla.get(i);
+        temp.saltos = s;
+        tabla.set(i, temp);
+    }
+    
+    public int getAprendido (int i) 
+    {
+        return this.tabla.get(i).aprendido;
+    }  
+    
+    public void setAprendido (int i, int s)
+    {
+        nodo temp = tabla.get(i);
+        temp.aprendido = s;
+        tabla.set(i, temp);
+    }
+    
+    public String getPuertoVecino (int i)
+    {
+        return this.puertos.get(i);
     }
     
     public String getTabla()
@@ -57,10 +109,15 @@ public class DatosRouter
             nodo temp = tabla.get(i);
             respuesta += temp.direccion + "\t" + 
                     temp.mascara + "\t" + temp.puerto + "\t" +
-                    temp.saltos;
+                    temp.saltos + "\n";
+                  
         }
         
         return respuesta;
+    }
+    
+    public int getTablaNodoSize() {
+       return tabla.size();
     }
     
     //Segun se necesite van a ocupar gets y sets

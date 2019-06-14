@@ -16,6 +16,8 @@ public class Principal extends javax.swing.JFrame
 {
     public ArrayList<DatosRouter> Routers;
     public ArrayList<Boolean> bR; //Saber que Routers estan en ejecucion
+    public DatosRouter.nodo nodo;
+    
 
     public Principal() 
     {
@@ -143,10 +145,11 @@ public class Principal extends javax.swing.JFrame
                 Router rou = new Router(Routers.get(r));
                 Thread hRou = new Thread(rou);
                 hRou.start();
-
+                rou.pasoInfoVecinos();
                 bR.set(r, true);
             }
         }
+        
     }//GEN-LAST:event_btnIniciarActionPerformed
 
     private void txtRouterKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txtRouterKeyTyped
