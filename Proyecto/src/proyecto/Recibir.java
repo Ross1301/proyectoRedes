@@ -33,7 +33,7 @@ public class Recibir implements Runnable
     {
         try 
         {
-            System.out.println("Escuchando a " + puerto);
+            //System.out.println("Escuchando a " + puerto);
             ServerSocket sk = new ServerSocket(puerto);
             while (true) 
             {

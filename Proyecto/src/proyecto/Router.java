@@ -7,6 +7,8 @@ package proyecto;
 
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -25,6 +27,8 @@ public class Router extends javax.swing.JFrame implements Runnable, Comunicacion
     Enviar env;
     Recibir rec;
     
+    boolean vivo;
+    
     public Router(DatosRouter dr) 
     {
         datos = dr;
@@ -37,9 +41,11 @@ public class Router extends javax.swing.JFrame implements Runnable, Comunicacion
         this.setVisible(true);
         initComponents();
         
-        txtNumero.setText("" + datos.getNombre());
+        vivo = true;
         
+        txtNumero.setText("" + datos.getNombre());
         env = new Enviar();
+        
         //Hilo que escucha a sus vecinos
         rec = new Recibir(this, datos.getNombre());
         Thread hRec = new Thread(rec);
@@ -59,38 +65,62 @@ public class Router extends javax.swing.JFrame implements Runnable, Comunicacion
     @Override
     public void recibido(String respuesta) 
     {
-        txtMensaje.setText(respuesta);
+        //txtMensaje.setText(respuesta);
         
-        String[] temp = respuesta.split(";");
-        String direccion = temp[0];
-        String mascara = temp[1];
-        String puertoVecino = temp[2];
-        String saltos = temp[3];
-        String nombre = temp[4];
-        
-        int tamanoTabla = datos.getTablaNodoSize();
-        boolean encontrado = false;
-        int salt = Integer.parseInt(saltos);
-        int name =Integer.parseInt(nombre);
-         salt++;     
-        for (int i = 0; i < tamanoTabla;  i++)   
+        if (vivo)
         {
-            if (direccion == this.datos.getDireccion(i)) {
-                encontrado = true;
-                
-                if ((salt + 1) < this.datos.getSaltos(i)) {
-                    this.datos.setSalto(i, salt);
-                    this.datos.setPuerto(i, puertoVecino);
-                    this.datos.setAprendido(i, name);
+            String[] temp = respuesta.split(";");
+
+            if(temp[0].compareTo("0") == 0)
+            {
+                txtMensaje.setText("Router caido " + temp[1]);
+
+                String puertoCaido = temp[1];
+
+                int tamanoTabla = datos.getTablaNodoSize();
+                for (int i = 0; i < tamanoTabla;  i++)   
+                {
+                    if (puertoCaido.compareTo(this.datos.getPuerto(i)) == 0) 
+                    {
+                        this.datos.setSalto(i, 16);
+                    }  
                 }
-            }  
+            }
+            else
+            {
+                String direccion = temp[0];
+                String mascara = temp[1];
+                String puertoVecino = temp[2];
+                String saltos = temp[3];
+                String nombre = temp[4];
+
+                int salt = Integer.parseInt(saltos) + 1;
+                int name =Integer.parseInt(nombre);
+
+                int tamanoTabla = datos.getTablaNodoSize();
+                boolean encontrado = false;
+                for (int i = 0; i < tamanoTabla;  i++)   
+                {
+                    if (direccion.compareTo(this.datos.getDireccion(i)) == 0) 
+                    {
+                        encontrado = true;
+
+                        if ((salt) < this.datos.getSaltos(i)) 
+                        {
+                            this.datos.setSalto(i, salt);
+                            this.datos.setPuerto(i, puertoVecino);
+                            this.datos.setAprendido(i, name);
+                        }
+                    }  
+                }
+
+                if (encontrado == false) 
+                {
+                    datos.setNodo(direccion, mascara, puertoVecino, salt, name);
+                }
+            }
+            taTabla.setText(datos.getTabla());
         }
-        
-        if (encontrado == false) 
-        {
-            datos.setNodo(direccion, mascara, puertoVecino, salt, name);
-        }
-        taTabla.setText(datos.getTabla());
     }
 
     @Override
@@ -100,36 +130,79 @@ public class Router extends javax.swing.JFrame implements Runnable, Comunicacion
     
     
     //Metodo para enviar informacion a los vecinos automaticamente cada 10 segundos 
-    public void pasoInfoVecinos() {
-        //Lista de vecinos
+    public void pasoInfoVecinos() 
+    {
+        long tiempo = System.currentTimeMillis();
         
+        while (vivo)
+        {
+            
+            try 
+            {
+                TimeUnit.SECONDS.sleep(10);
+            } 
+            catch (InterruptedException ex) 
+            {
+                Logger.getLogger(Router.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            
+            //Lista de vecinos
+            ArrayList<Integer> vecinos = datos.getVecinos();
+            int tamanoTabla = datos.getTablaNodoSize();
+
+            //Ciclo para obtener los datos del nodo
+            for (int i = 0; i < tamanoTabla;  i++) {    
+
+                String direccion = this.datos.getDireccion(i);
+                String mascara = this.datos.getMascara(i);
+                String puerto = this.datos.getPuerto(i);
+                int saltos = this.datos.getSaltos(i);
+                int maestro = this.datos.getAprendido(i);
+
+                //Ciclo para pasar mensaje a los vecinos
+                for (int j = 0; j < vecinos.size(); j++) 
+                {
+                    String mensaje = direccion + ";" + mascara + ";";
+                    mensaje += datos.getPuertoVecino(j) + ";" + saltos + ";" + datos.getNombre();
+                    int vecino = vecinos.get(j);
+
+                    if (!( vecino == maestro )) 
+                    {
+                        env.envMensaje(mensaje, vecino);
+                    }
+
+                }
+            }
+            
+            if (datos.getNombre() == 3)
+            {
+                long actual = System.currentTimeMillis();
+                
+                if ((actual - tiempo) >= 60000)
+                {
+                    routerCaido();
+                }
+            }
+        }
+    }
+    
+    public void routerCaido()
+    {
+        vivo = false;
+        taTabla.setText(" ");
         
         ArrayList<Integer> vecinos = datos.getVecinos();
-        int tamanoTabla = datos.getTablaNodoSize();
+
+        //Ciclo para pasar mensaje a los vecinos
+        for (int j = 0; j < vecinos.size(); j++) 
+        {
+            String mensaje = "0;" + datos.getPuertoVecino(j);
+            int vecino = vecinos.get(j);
+            
+            env.envMensaje(mensaje, vecino);
+
+        }
         
-        //Ciclo para obtener los datos del nodo
-        for (int i = 0; i < tamanoTabla;  i++) {    
-            
-            String direccion = this.datos.getDireccion(i);
-            String mascara = this.datos.getMascara(i);
-            String puerto = this.datos.getPuerto(i);
-            int saltos = this.datos.getSaltos(i);
-            int maestro = this.datos.getAprendido(i);
-                
-            String mensaje = direccion + ";" + mascara + ";";
-            
-            
-            //Ciclo para pasar mensaje a los vecinos
-            for (int j = 0; j < vecinos.size(); j++) {
-                //***esperar 10 segundos***
-                mensaje+=datos.getPuertoVecino(j) + ";" + saltos + ";" + datos.getNombre();
-                System.out.println(mensaje);
-                if (!( j == maestro )) {
-                    env.envMensaje(mensaje, vecinos.get(i));
-                }
-                         
-            }
-        } 
     }
 
     /**
@@ -214,7 +287,6 @@ public class Router extends javax.swing.JFrame implements Runnable, Comunicacion
 
     private void btnEnviarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEnviarActionPerformed
         // TODO add your handling code here:
-        pasoInfoVecinos();
     }//GEN-LAST:event_btnEnviarActionPerformed
 
     /**

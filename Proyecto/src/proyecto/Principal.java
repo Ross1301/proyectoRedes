@@ -145,7 +145,6 @@ public class Principal extends javax.swing.JFrame
                 Router rou = new Router(Routers.get(r));
                 Thread hRou = new Thread(rou);
                 hRou.start();
-                rou.pasoInfoVecinos();
                 bR.set(r, true);
             }
         }

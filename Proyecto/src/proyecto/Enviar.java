@@ -23,7 +23,7 @@ public class Enviar
         String host = "127.0.0.1";
         try (Socket socket = new Socket(host, port))
         {
-            System.out.println("Men " + port);
+            //System.out.println("Envia Men " + men + " Puerto " + port);
             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             
